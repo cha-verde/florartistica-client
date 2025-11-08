@@ -66,6 +66,61 @@ function Products(){
       const [products, setProducts] = useState<Product[]>([]);
     
 
+      //edit product
+
+      const [editStatus, changeEditStatus] = useState(false);
+
+
+      function closeEdit(){
+        changeEditStatus(false);
+      }
+
+      function editProduct(id: number, name: string, digital: number, physical: number, photo){
+        dispatch({ type: "SET_ID", payload: id });
+        dispatch({ type: "SET_NAME", payload: name });
+        dispatch({ type: "SET_PRICE_DIGITAL", payload: digital });
+        dispatch({ type: "SET_PRICE_PHYSICAL", payload: physical });
+        console.log(state.photo)
+
+
+        changeEditStatus(true);
+      }
+
+     async function updateProduct(e){
+
+      e.preventDefault();
+
+
+      const formData = new FormData()
+
+      console.log(state.photo)
+      formData.append("id", state.id)
+      formData.append("name", state.name)
+      formData.append("photo", state.photo)
+      formData.append("price.digital", state.price.digital.toString())
+      formData.append("price.physical", state.price.physical.toString())
+      
+
+      console.log(formData)
+     const response = await fetch(`http://localhost:5209/api/products/${state.id}`, {
+          method: "PUT",
+          body: formData
+        });
+  
+         
+      
+            if(response.ok){
+              fetch("http://localhost:5209/api/Products")
+              .then((res) => res.json())
+              .then((data) => setProducts(data))
+              .catch((err) => console.error(err));
+
+              changeEditStatus(false);
+              alert("Success")
+
+            }
+      
+          }
 
 
      //upload product
@@ -81,7 +136,7 @@ function Products(){
     
         await fetch("http://localhost:5209/api/products/", {
             method: "POST",
-            body: formData
+             body: formData
           });
     
             fetch("http://localhost:5209/api/Products")
@@ -112,7 +167,37 @@ function Products(){
       }, []);
       
       return (
+
+
         <div className="flex flex-row">
+
+        {/* product edit form */}
+
+        <form className={`flex flex-col gap-2 w-100 h-100 bg-white ${editStatus == true ? "block absolute" : "hidden"
+            }`}>
+              <button type="button" onClick={() => closeEdit()}>X</button>
+              <div className="text-center">Edit product</div>
+              <label>Name</label>
+              <input
+                type="text" className="bg-gray-100/70 p-1 rounded-sm" value={state.name}
+                onChange={(e) => handleNameChange(e.target.value)}
+              ></input>
+              <label htmlFor="">Price Digital</label>
+              <input
+                type="number" className="bg-gray-100/70 p-1 rounded-sm" 
+                onChange={(e) => handlePriceDigitalChange(e.target.value)} value={state.price.digital}
+              ></input>
+              <label htmlFor="">Price Physical</label>
+              <input
+                type="number" className="bg-gray-100/70 p-1 rounded-sm" 
+                onChange={(e) => handlePricePhysicalChange(e.target.value)} value={state.price.physical}
+              ></input>
+              <label>Photo</label>
+              <input type="file" onChange={(e) => handlePhoto(e.target.files[0])}></input>
+              <button onClick={(e) => updateProduct(e)}type="submit">Submit</button>
+            </form>
+
+
             <div className="flex w-lg flex-row gap-2 p-5">
             {products.map((product) => (
               <div className="shadow-sm p-5">
@@ -120,6 +205,7 @@ function Products(){
                 <img className="object-scale-down rounded-md w-50" src={`http://localhost:5209/images/${product.photo}`} alt="" />
                 <div>Digital: {product.price.digital}</div>
                 <div>Physical: {product.price.physical}</div>
+                <button onClick={() => editProduct(product.id, product.name, product.price.digital, product.price.physical, product.photo)}>Edit</button>
                 <button onClick={() => deleteProduct(product.id)}>Remove</button>
               </div>
             ))}
