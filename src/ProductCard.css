@@ -1,0 +1,5 @@
+@import "tailwindcss";
+
+.flow > * + * {
+    margin-top: var(--flow-space, 0.5em);
+  }

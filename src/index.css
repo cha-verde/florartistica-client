@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme{
+  --color-sidetab: oklch(0.92 0 180);
+}
+
+:root{
+  --font-nunito: "Nunito", sans-serif;
+}
+
+
+
+body,
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+
+li {
+  list-style: none;
+  list-style-type: none;
+}
+
+a {
+  text-decoration: none;
+}
+
+img,
+picture {
+  max-width: 100%;
+  display: block;
+}
+
+button {
+  border: none;
+  cursor: pointer;
+}
+
+.a {
+  display: none;
+}
+
+body{
+    width: 100%;
+    height: 100vh;
+    /* background: radial-gradient(circle,rgba(238, 174, 202, 1) 0%, rgba(148, 187, 233, 1) 100%); */
+    background-color: white;
+    font-family: var(--font-nunito);;
+}
