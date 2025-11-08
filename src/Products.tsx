@@ -1,241 +1,256 @@
 import { useState, useEffect, useReducer } from "react";
-import type { Product } from './Product'
-import "./Products.css"
+import type { Product } from "./Product";
+import "./Products.css";
 
-function Products(){
+function Products() {
+  const initialProduct: Product = {
+    id: 0,
+    name: "",
+    price: {
+      digital: 0,
+      physical: 0,
+    },
+    photo: [""],
+  };
 
+  //first time getting data
 
-    const initialProduct: Product = {
-        id: 0,
-        name: "",
-        price: {
-          digital: 0,
-          physical: 0,
-        },
-        photo: [""],
-      };
-    
-      const [state, dispatch] = useReducer(reducer, initialProduct);
-    
-      const handleNameChange = (newName: string) => {
-        dispatch({ type: "SET_NAME", payload: newName });
-      };
-    
-      const handlePriceDigitalChange = (newPrice: number) => {
-        dispatch({ type: "SET_PRICE_DIGITAL", payload: newPrice });
-      };
-    
-      const handlePricePhysicalChange = (newPrice: number) => {
-        dispatch({ type: "SET_PRICE_PHYSICAL", payload: newPrice });
-      };
-    
-      const handlePhoto = (file) => {
-        dispatch({type: "SET_PHOTO", payload: file})
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const [state, dispatch] = useReducer(reducer, initialProduct);
+
+  const handleNameChange = (newName: string) => {
+    dispatch({ type: "SET_NAME", payload: newName });
+  };
+
+  const handlePriceDigitalChange = (newPrice: number) => {
+    dispatch({ type: "SET_PRICE_DIGITAL", payload: newPrice });
+  };
+
+  const handlePricePhysicalChange = (newPrice: number) => {
+    dispatch({ type: "SET_PRICE_PHYSICAL", payload: newPrice });
+  };
+
+  const handlePhoto = (file) => {
+    dispatch({ type: "SET_PHOTO", payload: file });
+  };
+
+  function reducer(state, action) {
+    switch (action.type) {
+      case "SET_ID":
+        return { ...state, id: action.payload };
+      case "SET_NAME":
+        return { ...state, name: action.payload };
+      case "SET_PRICE_DIGITAL":
+        return {
+          ...state,
+          price: {
+            ...state.price,
+            digital: action.payload,
+          },
+        };
+      case "SET_PRICE_PHYSICAL":
+        return {
+          ...state,
+          price: {
+            ...state.price,
+            physical: action.payload,
+          },
+        };
+      case "SET_PHOTO":
+        return {
+          ...state,
+          photo: action.payload,
+        };
+    }
+  }
+
+  function fetchProducts() {
+    fetch("http://localhost:5209/api/Products")
+      .then((res) => res.json())
+      .then((data) => setProducts(data))
+      .catch((err) => console.error(err));
+  }
+
+  function createDataToSend() {
+    const formData = new FormData();
+    formData.append("name", state.name);
+    formData.append("photo", state.photo);
+    formData.append("price.digital", state.price.digital);
+    formData.append("price.physical", state.price.physical);
+
+    return formData;
+  }
+
+  const [products, setProducts] = useState<Product[]>([]);
+
+  //edit product
+
+  const [formStatus, changeFormStatus] = useState(false);
+  const [sendingMode, changeSendingMode] = useState("");
+
+  function checkMode(mode: string) {
+    if (mode == "Add") {
+      changeFormStatus(true);
+      changeSendingMode("post");
+    } else if (mode == "Edit") {
+      changeFormStatus(true);
+      changeSendingMode("put");
+    }
+  }
+
+  function closeEdit() {
+    changeFormStatus(false);
+  }
+
+  function editProduct(
+    id: number,
+    name: string,
+    digital: number,
+    physical: number,
+    photo
+  ) {
+    dispatch({ type: "SET_ID", payload: id });
+    dispatch({ type: "SET_NAME", payload: name });
+    dispatch({ type: "SET_PRICE_DIGITAL", payload: digital });
+    dispatch({ type: "SET_PRICE_PHYSICAL", payload: physical });
+
+    changeFormStatus(true);
+  }
+
+  async function updateProduct(e) {
+    e.preventDefault();
+
+    const dataToSend = createDataToSend();
+    dataToSend.append("id", state.id);
+
+    const response = await fetch(
+      `http://localhost:5209/api/products/${state.id}`,
+      {
+        method: "PUT",
+        body: dataToSend,
       }
-    
-      function reducer(state, action) {
-        switch (action.type) {
-          case "SET_ID":
-            return { ...state, id: action.payload };
-          case "SET_NAME":
-            return { ...state, name: action.payload };
-          case "SET_PRICE_DIGITAL":
-            return {
-              ...state,
-              price: {
-                ...state.price,
-                digital: action.payload,
-              },
-            };
-          case "SET_PRICE_PHYSICAL":
-            return {
-              ...state,
-              price: {
-                ...state.price,
-                physical: action.payload,
-              },
-            };
-          case "SET_PHOTO":
-            return {
-              ...state,
-              photo: action.payload,
-            };
-        }
-      }
-    
-      const [products, setProducts] = useState<Product[]>([]);
-    
+    );
 
-      //edit product
+    if (response.ok) {
+      fetchProducts();
+      changeFormStatus(false);
+      alert("Success");
+    }
+  }
 
-      const [editStatus, changeEditStatus] = useState(false);
+  //upload product
 
+  const uploadProduct = async (e) => {
+    e.preventDefault();
 
-      function closeEdit(){
-        changeEditStatus(false);
-      }
+    const dataToSend = createDataToSend();
 
-      function editProduct(id: number, name: string, digital: number, physical: number, photo){
-        dispatch({ type: "SET_ID", payload: id });
-        dispatch({ type: "SET_NAME", payload: name });
-        dispatch({ type: "SET_PRICE_DIGITAL", payload: digital });
-        dispatch({ type: "SET_PRICE_PHYSICAL", payload: physical });
-        console.log(state.photo)
+    await fetch("http://localhost:5209/api/products/", {
+      method: "POST",
+      body: dataToSend,
+    });
 
+    fetchProducts();
+    e.target.reset();
+  };
 
-        changeEditStatus(true);
-      }
+  //delete product
 
-     async function updateProduct(e){
+  async function deleteProduct(id: number) {
+    const response = await fetch(`http://localhost:5209/api/products/${id}`, {
+      method: "DELETE",
+    });
 
-      e.preventDefault();
+    if (response.ok) {
+      setProducts((p) => p.filter((product) => product.id != id));
+    }
+  }
 
+  return (
+    <div className="flex flex-row">
+      {/* product edit form */}
 
-      const formData = new FormData()
-
-      console.log(state.photo)
-      formData.append("id", state.id)
-      formData.append("name", state.name)
-      formData.append("photo", state.photo)
-      formData.append("price.digital", state.price.digital.toString())
-      formData.append("price.physical", state.price.physical.toString())
-      
-
-      console.log(formData)
-     const response = await fetch(`http://localhost:5209/api/products/${state.id}`, {
-          method: "PUT",
-          body: formData
-        });
-  
-         
-      
-            if(response.ok){
-              fetch("http://localhost:5209/api/Products")
-              .then((res) => res.json())
-              .then((data) => setProducts(data))
-              .catch((err) => console.error(err));
-
-              changeEditStatus(false);
-              alert("Success")
-
-            }
-      
+      <form
+        className={`flex flex-col gap-2 w-100 h-100 bg-white ${
+          formStatus == true ? "block absolute" : "hidden"
+        }`}
+        onSubmit={function (e) {
+          if (sendingMode == "post") {
+            uploadProduct(e);
+          } else if (sendingMode == "put") {
+            updateProduct(e);
           }
+        }}
+      >
+        <button type="button" onClick={() => closeEdit()}>
+          X
+        </button>
+        <div className="text-center">Edit product</div>
+        <label>Name</label>
+        <input
+          type="text"
+          className="bg-gray-100/70 p-1 rounded-sm"
+          value={state.name}
+          onChange={(e) => handleNameChange(e.target.value)}
+        ></input>
+        <label htmlFor="">Price Digital</label>
+        <input
+          type="number"
+          className="bg-gray-100/70 p-1 rounded-sm"
+          onChange={(e) => handlePriceDigitalChange(e.target.value)}
+          value={state.price.digital}
+        ></input>
+        <label htmlFor="">Price Physical</label>
+        <input
+          type="number"
+          className="bg-gray-100/70 p-1 rounded-sm"
+          onChange={(e) => handlePricePhysicalChange(e.target.value)}
+          value={state.price.physical}
+        ></input>
+        <label>Photo</label>
+        <input
+          type="file"
+          onChange={(e) => handlePhoto(e.target.files[0])}
+        ></input>
+        <button type="submit">Submit</button>
+      </form>
 
-
-     //upload product
-
-    const uploadProduct = async (e) => {
-        e.preventDefault();
-    
-        const formData = new FormData()
-        formData.append("name", state.name)
-        formData.append("photo", state.photo)
-        formData.append("price.digital", state.price.digital)
-        formData.append("price.physical", state.price.physical)
-    
-        await fetch("http://localhost:5209/api/products/", {
-            method: "POST",
-             body: formData
-          });
-    
-            fetch("http://localhost:5209/api/Products")
-              .then((res) => res.json())
-              .then((data) => setProducts(data))
-              .catch((err) => console.error(err));
-
-        e.target.reset();
-    }
-    
-    async function deleteProduct(id: number) {
-        
-        const response = await fetch(`http://localhost:5209/api/products/${id}`, {
-            method: "DELETE",
-          });
-        
-        if(response.ok){
-            setProducts(p => p.filter(product => product.id != id))
-        }
-         
-    }
-    
-      useEffect(() => {
-        fetch("http://localhost:5209/api/Products")
-          .then((res) => res.json())
-          .then((data) => setProducts(data))
-          .catch((err) => console.error(err));
-      }, []);
-      
-      return (
-
-
-        <div className="flex flex-row">
-
-        {/* product edit form */}
-
-        <form className={`flex flex-col gap-2 w-100 h-100 bg-white ${editStatus == true ? "block absolute" : "hidden"
-            }`}>
-              <button type="button" onClick={() => closeEdit()}>X</button>
-              <div className="text-center">Edit product</div>
-              <label>Name</label>
-              <input
-                type="text" className="bg-gray-100/70 p-1 rounded-sm" value={state.name}
-                onChange={(e) => handleNameChange(e.target.value)}
-              ></input>
-              <label htmlFor="">Price Digital</label>
-              <input
-                type="number" className="bg-gray-100/70 p-1 rounded-sm" 
-                onChange={(e) => handlePriceDigitalChange(e.target.value)} value={state.price.digital}
-              ></input>
-              <label htmlFor="">Price Physical</label>
-              <input
-                type="number" className="bg-gray-100/70 p-1 rounded-sm" 
-                onChange={(e) => handlePricePhysicalChange(e.target.value)} value={state.price.physical}
-              ></input>
-              <label>Photo</label>
-              <input type="file" onChange={(e) => handlePhoto(e.target.files[0])}></input>
-              <button onClick={(e) => updateProduct(e)}type="submit">Submit</button>
-            </form>
-
-
-            <div className="flex w-lg flex-row gap-2 p-5">
-            {products.map((product) => (
-              <div className="shadow-sm p-5">
-                <div>{product.name}</div>
-                <img className="object-scale-down rounded-md w-50" src={`http://localhost:5209/images/${product.photo}`} alt="" />
-                <div>Digital: {product.price.digital}</div>
-                <div>Physical: {product.price.physical}</div>
-                <button onClick={() => editProduct(product.id, product.name, product.price.digital, product.price.physical, product.photo)}>Edit</button>
-                <button onClick={() => deleteProduct(product.id)}>Remove</button>
-              </div>
-            ))}
-            </div>
-
-          <div className="shadow-lg rounded-md p-10">
-            <form className="flex flex-col gap-2" onSubmit={(e) => uploadProduct(e)}>
-              <div className="text-center">Add a product</div>
-              <label>Name</label>
-              <input
-                type="text" className="bg-gray-100/70 p-1 rounded-sm" 
-                onChange={(e) => handleNameChange(e.target.value)}
-              ></input>
-              <label htmlFor="">Price Digital</label>
-              <input
-                type="number" className="bg-gray-100/70 p-1 rounded-sm" 
-                onChange={(e) => handlePriceDigitalChange(e.target.value)}
-              ></input>
-              <label htmlFor="">Price Physical</label>
-              <input
-                type="number" className="bg-gray-100/70 p-1 rounded-sm" 
-                onChange={(e) => handlePricePhysicalChange(e.target.value)}
-              ></input>
-              <label>Photo</label>
-              <input type="file" onChange={(e) => handlePhoto(e.target.files[0])}></input>
-              <button type="submit">Submit</button>
-            </form>
+      <div className="flex w-lg flex-row gap-2 p-5">
+        {products.map((product) => (
+          <div className="shadow-sm p-5">
+            <div>{product.name}</div>
+            <img
+              className="object-scale-down rounded-md w-50"
+              src={`http://localhost:5209/images/${product.photo}`}
+              alt=""
+            />
+            <div>Digital: {product.price.digital}</div>
+            <div>Physical: {product.price.physical}</div>
+            <button
+              onClick={function () {
+                checkMode("Edit");
+                editProduct(
+                  product.id,
+                  product.name,
+                  product.price.digital,
+                  product.price.physical,
+                  product.photo
+                );
+              }}
+            >
+              Edit
+            </button>
+            <button onClick={() => deleteProduct(product.id)}>Remove</button>
           </div>
-        </div>
-      );
+        ))}
+      </div>
+
+      <button onClick={() => checkMode("Add")}>Add product</button>
+    </div>
+  );
 }
 
-export default Products
+export default Products;
