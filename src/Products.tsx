@@ -1,6 +1,7 @@
 import { useState, useEffect, useReducer } from "react";
 import type { Product } from "./Product";
 import "./Products.css";
+import { useRef } from 'react';
 
 function Products() {
   const initialProduct: Product = {
@@ -92,11 +93,10 @@ function Products() {
   const [sendingMode, changeSendingMode] = useState("");
 
   function checkMode(mode: string) {
+    changeFormStatus(true);
     if (mode == "Add") {
-      changeFormStatus(true);
       changeSendingMode("post");
     } else if (mode == "Edit") {
-      changeFormStatus(true);
       changeSendingMode("put");
     }
   }
@@ -112,10 +112,13 @@ function Products() {
     physical: number,
     photo
   ) {
-    dispatch({ type: "SET_ID", payload: id });
-    dispatch({ type: "SET_NAME", payload: name });
-    dispatch({ type: "SET_PRICE_DIGITAL", payload: digital });
-    dispatch({ type: "SET_PRICE_PHYSICAL", payload: physical });
+    if(sendingMode == "put"){
+      dispatch({ type: "SET_ID", payload: id });
+    }
+
+    handleNameChange(name)
+    handlePriceDigitalChange(digital)
+    handlePricePhysicalChange(physical)
 
     changeFormStatus(true);
   }
@@ -139,6 +142,9 @@ function Products() {
       changeFormStatus(false);
       alert("Success");
     }
+    closeEdit();
+    changeSendingMode("")
+
   }
 
   //upload product
@@ -154,7 +160,12 @@ function Products() {
     });
 
     fetchProducts();
-    e.target.reset();
+    closeEdit();
+    changeSendingMode("")
+    handleNameChange("")
+    handlePriceDigitalChange(0)
+    handlePricePhysicalChange(0)
+
   };
 
   //delete product
@@ -173,7 +184,7 @@ function Products() {
     <div className="flex flex-row">
       {/* product edit form */}
 
-      <form
+      <form ref={formRef}
         className={`flex flex-col gap-2 w-100 h-100 bg-white ${
           formStatus == true ? "block absolute" : "hidden"
         }`}
@@ -191,28 +202,28 @@ function Products() {
         <div className="text-center">Edit product</div>
         <label>Name</label>
         <input
-          type="text"
+          type="text" name="name"
           className="bg-gray-100/70 p-1 rounded-sm"
           value={state.name}
           onChange={(e) => handleNameChange(e.target.value)}
         ></input>
         <label htmlFor="">Price Digital</label>
         <input
-          type="number"
+          type="number" name="digital-price"
           className="bg-gray-100/70 p-1 rounded-sm"
           onChange={(e) => handlePriceDigitalChange(e.target.value)}
           value={state.price.digital}
         ></input>
         <label htmlFor="">Price Physical</label>
         <input
-          type="number"
+          type="number" name="physical-price"
           className="bg-gray-100/70 p-1 rounded-sm"
           onChange={(e) => handlePricePhysicalChange(e.target.value)}
           value={state.price.physical}
         ></input>
         <label>Photo</label>
         <input
-          type="file"
+          type="file" name="photo"
           onChange={(e) => handlePhoto(e.target.files[0])}
         ></input>
         <button type="submit">Submit</button>
@@ -220,7 +231,7 @@ function Products() {
 
       <div className="flex w-lg flex-row gap-2 p-5">
         {products.map((product) => (
-          <div className="shadow-sm p-5">
+          <div key={product.id} className="shadow-sm p-5">
             <div>{product.name}</div>
             <img
               className="object-scale-down rounded-md w-50"
@@ -243,6 +254,18 @@ function Products() {
             >
               Edit
             </button>
+            <button
+            onClick={function () {
+              checkMode("Add");
+              editProduct(
+                product.id,
+                product.name,
+                product.price.digital,
+                product.price.physical,
+                product.photo
+              );
+            }}
+            >Copy</button>
             <button onClick={() => deleteProduct(product.id)}>Remove</button>
           </div>
         ))}
