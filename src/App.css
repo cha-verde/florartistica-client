@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+button{
+  transition: background-color 0.2s ease-out;
+}
+
+form{
+  transition: display 0.2s ease-out;
+}
+
+.btn-primary{
+  @apply bg-pink-400 p-4 rounded-md shadow-md font-semibold text-white text-lg text-shadow-sm hover:bg-white hover:text-pink-400 border-2 border-pink-400;
+}

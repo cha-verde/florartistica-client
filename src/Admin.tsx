@@ -6,7 +6,7 @@ function Admin() {
   const [activeTab, setTab] = useState("dashboard");
 
   return (
-    <div className="flex flex-row w-full h-dvh">
+    <div className="flex flex-row h-dvh">
       <div className="sidebar p-10 shadow-md">
         <ul className="flex flex-col gap-5">
           <li>florartistica</li>
@@ -38,7 +38,7 @@ function Admin() {
           </li>
         </ul>
       </div>
-      <div className="main">
+      <div className="main w-full">
         {activeTab === "dashboard" && <Dashboard></Dashboard>}
         {activeTab === "products" && <Products></Products>}
       </div>
